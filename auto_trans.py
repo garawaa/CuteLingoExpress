@@ -8,7 +8,7 @@ import sys
 import time
 import xml.etree.ElementTree
 import translators
-
+from tqdm import tqdm
 
 def replace_first_lines(file_path):
     """
@@ -40,12 +40,12 @@ def translate_string(source_string: str, source_language: str, target_language: 
     :return: The translated string.
     :rtype: str
     """
-    start_time = time.time()
+    # start_time = time.time()
     output = translators.google(source_string, source_language, target_language)
-    print(
-        f"translateString: {time.time() - start_time}s : {source_string} -> {output} "
-        f"({source_language} -> {target_language})"
-    )
+    # print(
+    #     f"translateString: {time.time() - start_time}s : {source_string} -> {output} "
+    #     f"({source_language} -> {target_language})"
+    # )
 
     return output
 
@@ -65,7 +65,10 @@ def transform_ts_file(ts_file_path, _language, target_language):
     tree = xml.etree.ElementTree.parse(ts_file_path)
     root = tree.getroot()
 
-    for message in root.iter('message'):
+    for message in tqdm(root.findall('context/message'),
+                        desc=f"Translating from {_language} to {target_language}",
+                        unit='msg', bar_format="{l_bar}{bar}{n_fmt}/{total_fmt} elasped:{elapsed}s remaining:{remaining}s {rate_fmt}"):
+        
         numerus = message.attrib.get('numerus') == 'yes'
         if numerus:
             source_text = message.find('source').text
@@ -93,7 +96,7 @@ def transform_ts_file(ts_file_path, _language, target_language):
     with open(ts_file_path, 'a', encoding='utf-8') as file:  # Preserve the last empty line
         file.write('\n')
 
-    print("TS file transformed successfully.")
+    print("TS file translated successfully.")
 
 
 def main():
